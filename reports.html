@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Wszystkie donosy — E.Donos</title>
+  <style>
+    :root{--bg:#0a0f1c;--panel:#0f1526;--border:#1b2236;--accent:#2b64d6;--muted:#98a0b3;--white:#e6eefc;}
+    body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:linear-gradient(180deg,var(--bg),#061026 140%);color:var(--white);}
+    .wrap{max-width:1000px;margin:0 auto;padding:28px}
+    header{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+    nav a{color:var(--muted);text-decoration:none;margin:0 10px}
+    .card{background:var(--panel);border:1px solid var(--border);padding:12px;border-radius:10px;margin-bottom:12px}
+    .muted{color:var(--muted)}
+    footer{margin-top:28px;padding-top:18px;border-top:1px solid var(--border);color:var(--muted);text-align:center}
+    .time{color:var(--muted);font-size:13px}
+    .empty{color:var(--muted);text-align:center;padding:30px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div style="width:46px;height:46px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),#4f46e5)">🚔</div>
+        <div>
+          <div style="font-weight:700">E.Donos</div>
+          <div class="muted small">Publiczna lista anonimowych donosów</div>
+        </div>
+      </div>
+      <nav>
+        <a href="index.html">Złóż donos</a>
+        <a href="reports.html">Wszystkie donosy</a>
+      </nav>
+    </header>
+
+    <main style="margin-top:18px">
+      <h1>Wszystkie donosy</h1>
+      <p class="muted">Lista aktualna na żywo. Możesz odświeżyć stronę, aby pobrać nowe wpisy.</p>
+
+      <div id="list"></div>
+      <div id="empty" class="empty" style="display:none">Brak donosów — bądź pierwszy!</div>
+    </main>
+
+    <footer>
+      © <span id="year"></span> E.Donos — Strona humorystyczna.
+    </footer>
+  </div>
+
+  <script type="module">
+    // Wklej tu ten sam firebaseConfig co w index.html
+    const firebaseConfig = {
+      // TU_TWOJ_FIREBASE_CONFIG
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+    const listEl = document.getElementById('list');
+    const emptyEl = document.getElementById('empty');
+
+    // nasłuchuj zmian w /donosy/
+    const donosyRef = ref(db, 'donosy');
+    onValue(donosyRef, (snapshot) => {
+      const data = snapshot.val();
+      listEl.innerHTML = '';
+      if (!data) {
+        emptyEl.style.display = 'block';
+        return;
+      }
+      emptyEl.style.display = 'none';
+      // data jest obiektem {key: {target,content,createdAt}}
+      // przekształć na tablicę i posortuj malejąco po createdAt
+      const arr = Object.entries(data).map(([id, item]) => ({ id, ...item }));
+      arr.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+      for (const it of arr) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const dateStr = it.createdAt ? new Date(it.createdAt).toLocaleString() : '';
+        card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+                            <div style="font-weight:700">${escapeHtml(it.target || '—')}</div>
+                            <div class="time">${dateStr}</div>
+                          </div>
+                          <div style="margin-top:8px">${escapeHtml(it.content || '')}</div>`;
+        listEl.appendChild(card);
+      }
+    }, (err) => {
+      console.error('Firebase read error', err);
+      listEl.innerHTML = '<div class="muted">Błąd przy pobieraniu danych.</div>';
+    });
+
+    // pomocnicza funkcja do escapowania prostego HTML (unikaj XSS)
+    function escapeHtml(s){
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+        .replace(/\n/g, '<br>');
+    }
+  </script>
+</body>
+</html>

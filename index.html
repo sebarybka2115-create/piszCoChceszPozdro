@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>E.Donos — Złóż donos (anonimowo)</title>
+  <style>
+    :root{--bg:#0a0f1c;--panel:#0f1526;--border:#1b2236;--accent:#2b64d6;--muted:#98a0b3;--white:#e6eefc;}
+    body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:linear-gradient(180deg,var(--bg),#061026 140%);color:var(--white);}
+    .wrap{max-width:1000px;margin:0 auto;padding:28px;}
+    header{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:46px;height:46px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),#4f46e5)}
+    nav a{color:var(--muted);text-decoration:none;margin:0 10px}
+    nav a:hover{color:var(--white)}
+    h1{font-size:28px;margin:8px 0}
+    p{color:var(--muted)}
+    .card{background:var(--panel);border:1px solid var(--border);padding:18px;border-radius:12px}
+    form{display:grid;gap:10px;margin-top:16px}
+    input,textarea,select{padding:10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--white);resize:vertical}
+    button{padding:10px 14px;border-radius:999px;border:none;cursor:pointer;background:linear-gradient(90deg,var(--accent),#4f46e5);color:white;font-weight:700}
+    .muted{color:var(--muted);font-size:13px}
+    .small{font-size:13px}
+    footer{margin-top:28px;padding-top:18px;border-top:1px solid var(--border);color:var(--muted);text-align:center}
+    .link{color:var(--accent);text-decoration:none}
+    .center{text-align:center}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden>🚔</div>
+        <div>
+          <div style="font-weight:700">E.Donos</div>
+          <div class="muted small">Marka — Zgłaszaj. Chroń. Naprawiaj.</div>
+        </div>
+      </div>
+      <nav>
+        <a href="index.html">Złóż donos</a>
+        <a href="reports.html">Wszystkie donosy</a>
+      </nav>
+    </header>
+
+    <main style="margin-top:18px">
+      <h1>Złóż anonimowy donos</h1>
+      <p class="muted">To jest projekt humorystyczny. Nie umieszczaj danych wrażliwych ani informacji, które mogłyby zaszkodzić komuś.</p>
+
+      <div class="card" role="region" aria-label="Formularz donos">
+        <form id="donosForm">
+          <label class="small muted">Na kogo (np. pseudonim)</label>
+          <input id="target" type="text" placeholder="Na kogo donos? (np. Jan Kowalski / pseudonim)" maxlength="200" required />
+
+          <label class="small muted">Treść donosu</label>
+          <textarea id="content" rows="6" placeholder="Opisz sytuację (krótko, bez danych wrażliwych)" maxlength="2000" required></textarea>
+
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button id="sendBtn" type="submit">Wyślij donos anonimowo</button>
+            <div class="muted small">Po wysłaniu wpis pojawi się publicznie na stronie <a class="link" href="reports.html">Wszystkie donosy</a>.</div>
+          </div>
+        </form>
+
+        <div id="status" class="muted small" style="margin-top:12px"></div>
+      </div>
+    </main>
+
+    <footer>
+      © <span id="year"></span> E.Donos — Strona humorystyczna. Nie do prawdziwych zgłoszeń.
+    </footer>
+  </div>
+
+  <!-- Firebase (CDN) - modular v9 -->
+  <script type="module">
+    // 1) Wklej tutaj swoją konfigurację Firebase (skopiowaną z konsoli) w miejsce poniżej:
+    const firebaseConfig = {
+      // TU_TWOJ_FIREBASE_CONFIG
+      // przykład:
+      // apiKey: "xxx",
+      // authDomain: "projekt.firebaseapp.com",
+      // databaseURL: "https://projekt-default-rtdb.europe-west1.firebasedatabase.app",
+      // projectId: "projekt",
+      // ...
+    };
+
+    // 2) importy SDK (z CDN)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, push, set, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const form = document.getElementById('donosForm');
+    const status = document.getElementById('status');
+    const sendBtn = document.getElementById('sendBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = '';
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Wysyłanie...';
+
+      const target = document.getElementById('target').value.trim();
+      const content = document.getElementById('content').value.trim();
+
+      if (!target || !content) {
+        status.textContent = 'Wypełnij wszystkie pola.';
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Wyślij donos anonimowo';
+        return;
+      }
+
+      try {
+        // zapis do bazy: node /donosy/
+        const newRef = push(ref(db, 'donosy'));
+        await set(newRef, {
+          target,
+          content,
+          createdAt: serverTimestamp()
+        });
+
+        status.style.color = '#34d399';
+        status.textContent = 'Gotowe — donos zapisany. Pojawi się w publicznej liście.';
+        form.reset();
+      } catch (err) {
+        console.error(err);
+        status.style.color = '#f87171';
+        status.textContent = 'Błąd przy zapisie. Sprawdź konfigurację Firebase.';
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Wyślij donos anonimowo';
+      }
+    });
+  </script>
+</body>
+</html>
