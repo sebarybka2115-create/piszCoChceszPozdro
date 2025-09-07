@@ -47,10 +47,16 @@
   </div>
 
   <script type="module">
-    // Wklej tu ten sam firebaseConfig co w index.html
-    const firebaseConfig = {
-      // TU_TWOJ_FIREBASE_CONFIG
-    };
+  const firebaseConfig = {
+  apiKey: "AIzaSyCTC6Q71Vt_79840ej8H3iNQc3-K8EhrRA",
+  authDomain: "e-donos.firebaseapp.com",
+  databaseURL: "https://e-donos-default-rtdb.firebaseio.com",
+  projectId: "e-donos",
+  storageBucket: "e-donos.firebasestorage.app",
+  messagingSenderId: "984979791589",
+  appId: "1:984979791589:web:ed0f0cd76cff4b81583e0c",
+  measurementId: "G-HB4QSRS72K"
+};
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
@@ -105,3 +111,4 @@
   </script>
 </body>
 </html>
+
